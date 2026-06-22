@@ -69,7 +69,7 @@
   .b-field { background: var(--bg2); color: var(--text2); }
   .mr { display: flex; gap: 10px; margin-top: 5px; flex-wrap: wrap; }
   .mi { font-size: 11px; color: var(--text2); }
-  .det { border-top: 0.5px solid var(--border); margin-top: .75rem; padding-top: .8rem; }
+  .det { border-top: 0.5px solid var(--border); margin-top: .75rem; padding-top: .8rem; cursor: default; }
   .dtabs { display: flex; border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: .75rem; width: fit-content; }
   .dt { padding: 4px 12px; font-size: 11px; cursor: pointer; background: var(--bg); color: var(--text2); border: none; border-right: 0.5px solid var(--border); font-family: var(--font); }
   .dt:last-child { border-right: none; }
@@ -416,7 +416,7 @@ function selProg(id) {
 function renderDet(p) {
   const a = p.ad;
   const profs = SPROFS[p.id] || [];
-  return `<div class="det">
+  return `<div class="det" onclick="event.stopPropagation()">
     <div class="dtabs">
       <button class="dt active" onclick="showDT(event,'da-${p.id}','dr-${p.id}','dp-${p.id}','dai-${p.id}')">Avg profile</button>
       <button class="dt" onclick="showDT(event,'dr-${p.id}','da-${p.id}','dp-${p.id}','dai-${p.id}')">Official req</button>
@@ -442,7 +442,7 @@ function renderDet(p) {
       <div class="sl">Official requirements by nationality</div>
       <div class="nr">
         <label>Your nationality:</label>
-        <select onchange="updReq(this.value,${p.id})" id="ns-${p.id}">
+        <select onchange="updReq(this.value,${p.id})" onclick="event.stopPropagation()" id="ns-${p.id}">
           <option value="UK">🇬🇧 UK</option><option value="US">🇺🇸 USA</option>
           <option value="IN">🇮🇳 India</option><option value="CN">🇨🇳 China</option>
           <option value="CA">🇨🇦 Canada</option><option value="AU">🇦🇺 Australia</option>
@@ -474,7 +474,7 @@ function renderDet(p) {
               <div class="sp-i"><strong>Extras:</strong> ${pr.ex}</div>
             </div>
           </div>`).join('')
-        : `<button class="btn btn-w" onclick="aiProfs(${p.id})">Load profiles via live AI search ↗</button>`
+        : `<button class="btn btn-w" onclick="event.stopPropagation();aiProfs(${p.id})">Load profiles via live AI search ↗</button>`
       }
       <div id="ap-${p.id}"></div>
     </div>
@@ -484,7 +484,7 @@ function renderDet(p) {
       <p style="font-size:11px;color:var(--text2);margin-bottom:8px">
         Requires a valid Anthropic API key set in <code>config.js</code>.
       </p>
-      <button class="btn btn-p" onclick="aiSearch(${p.id})" id="aib-${p.id}">Search GradCafe, Reddit & GMAT Club ↗</button>
+      <button class="btn btn-p" onclick="event.stopPropagation();aiSearch(${p.id})" id="aib-${p.id}">Search GradCafe, Reddit & GMAT Club ↗</button>
       <div id="air-${p.id}" style="margin-top:8px"></div>
     </div>
   </div>`;
@@ -505,6 +505,7 @@ function updReq(nat, id) {
 }
 
 function showDT(e, show, ...hide) {
+  e.stopPropagation();
   hide.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   const el = document.getElementById(show); if (el) el.style.display = 'block';
   e.target.closest('.dtabs').querySelectorAll('.dt').forEach(b => b.classList.remove('active'));
