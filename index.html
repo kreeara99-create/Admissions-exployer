@@ -440,8 +440,10 @@ function buildDet(p){
       html+=`<div class="sp-g"><div class="sp-i"><strong>GPA:</strong> ${pr.gpa}</div><div class="sp-i"><strong>Test:</strong> ${pr.tst}</div><div class="sp-i"><strong>Work:</strong> ${pr.wk}</div><div class="sp-i"><strong>Undergrad:</strong> ${pr.ug}</div><div class="sp-i"><strong>Nationality:</strong> ${pr.nat}</div><div class="sp-i"><strong>Extras:</strong> ${pr.ex}</div></div></div>`;
     });
   } else {
-    html+=`<div class="rbox"><div class="rl">About this data</div><div class="rv">Profiles are compiled from The GradCafe, Reddit, GMAT Club, Poets &amp; Quants and The Student Room. See the <strong>Avg profile</strong> tab for a summary, or visit the source links below to browse individual applicant reports.</div></div>`;
+    html+=`<div class="rbox"><div class="rl">About this data</div><div class="rv">Profiles are compiled from The GradCafe, Reddit, GMAT Club, Poets &amp; Quants and The Student Room. The <strong>Avg profile</strong> tab summarises these reports. Browse individual applicant results on the sources below.</div></div>`;
   }
+  const _pu2={'The GradCafe':'https://www.thegradcafe.com/survey/','Reddit r/GradAdmissions':'https://www.reddit.com/r/gradadmissions/','Reddit r/MBA':'https://www.reddit.com/r/MBA/','Reddit r/ApplyingToCollege':'https://www.reddit.com/r/ApplyingToCollege/','GMAT Club':'https://gmatclub.com/forum/results-tracker.html','Poets & Quants':'https://poetsandquants.com/','The Student Room':'https://www.thestudentroom.co.uk/','College Confidential':'https://talk.collegeconfidential.com/','Wall Street Oasis':'https://www.wallstreetoasis.com/','Clear Admit':'https://www.clearadmit.com/livewire/','Urch Forums':'https://www.urch.com/forums/','mim-essay.com':'https://mim-essay.com/','Reddit r/lawschool':'https://www.reddit.com/r/lawschool/','Reddit r/australia':'https://www.reddit.com/r/australia/','Reddit r/SGExams':'https://www.reddit.com/r/SGExams/'};
+  html+=`<div class="sl" style="margin-top:10px">Browse sources for individual profiles</div><div class="pills">${p.src.map(s=>_pu2[s]?`<a href="${_pu2[s]}" target="_blank" rel="noopener" class="pill" style="color:var(--purple);text-decoration:none;border-color:var(--purple-mid)">${s} ↗</a>`:`<span class="pill">${s}</span>`).join('')}</div>`;
   
   html+=`</div>`; // end prof panel
 
