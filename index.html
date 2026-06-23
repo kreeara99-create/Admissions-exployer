@@ -401,7 +401,7 @@ function buildDet(p){
   html+=`<button class="dt active" onclick="switchTab(${pid},'avg')">Avg profile</button>`;
   html+=`<button class="dt" onclick="switchTab(${pid},'req')">Official req</button>`;
   html+=`<button class="dt" onclick="switchTab(${pid},'prof')">Student profiles</button>`;
-  html+=`<button class="dt" onclick="switchTab(${pid},'ai')">Live AI search</button>`;
+  html+=``;
   html+=`</div>`;
 
   // avg profile panel
@@ -415,7 +415,8 @@ function buildDet(p){
   html+=`</div>`;
   html+=`<div class="rbox"><div class="rl">Extracurriculars & background</div><div class="rv">${a.ex}</div></div>`;
   html+=`<div class="rbox"><div class="rl">Typical undergrad</div><div class="rv">${a.pr}</div></div>`;
-  html+=`<div class="pills">${p.src.map(s=>`<span class="pill">${s}</span>`).join('')}</div>`;
+  const _su={'The GradCafe':'https://www.thegradcafe.com/survey/','Reddit r/GradAdmissions':'https://www.reddit.com/r/gradadmissions/','Reddit r/MBA':'https://www.reddit.com/r/MBA/','Reddit r/ApplyingToCollege':'https://www.reddit.com/r/ApplyingToCollege/','GMAT Club':'https://gmatclub.com/forum/results-tracker.html','Poets & Quants':'https://poetsandquants.com/','The Student Room':'https://www.thestudentroom.co.uk/','College Confidential':'https://talk.collegeconfidential.com/','Wall Street Oasis':'https://www.wallstreetoasis.com/','Clear Admit':'https://www.clearadmit.com/livewire/','Urch Forums':'https://www.urch.com/forums/','mim-essay.com':'https://mim-essay.com/','Reddit r/lawschool':'https://www.reddit.com/r/lawschool/','Reddit r/australia':'https://www.reddit.com/r/australia/','Reddit r/SGExams':'https://www.reddit.com/r/SGExams/'};
+  html+=`<div class="sl" style="margin-top:6px">Data sources</div><div class="pills">${p.src.map(s=>_su[s]?`<a href="${_su[s]}" target="_blank" rel="noopener" class="pill" style="color:var(--purple);text-decoration:none">${s} ↗</a>`:`<span class="pill">${s}</span>`).join('')}</div>`;
   if(p.url) html+=`<a href="${p.url}" class="ext-link" target="_blank" rel="noopener">↗ Official program page</a>`;
   html+=`</div>`; // end avg panel
 
@@ -439,26 +440,20 @@ function buildDet(p){
       html+=`<div class="sp-g"><div class="sp-i"><strong>GPA:</strong> ${pr.gpa}</div><div class="sp-i"><strong>Test:</strong> ${pr.tst}</div><div class="sp-i"><strong>Work:</strong> ${pr.wk}</div><div class="sp-i"><strong>Undergrad:</strong> ${pr.ug}</div><div class="sp-i"><strong>Nationality:</strong> ${pr.nat}</div><div class="sp-i"><strong>Extras:</strong> ${pr.ex}</div></div></div>`;
     });
   } else {
-    html+=`<button class="btn btn-w" onclick="aiProfs(${pid})">Load profiles via live AI search ↗</button>`;
+    html+=`<div class="rbox"><div class="rl">About this data</div><div class="rv">Profiles are compiled from The GradCafe, Reddit, GMAT Club, Poets &amp; Quants and The Student Room. See the <strong>Avg profile</strong> tab for a summary, or visit the source links below to browse individual applicant reports.</div></div>`;
   }
-  html+=`<div id="ai-prof-${pid}"></div>`;
+  
   html+=`</div>`; // end prof panel
 
   // live AI search panel
-  html+=`<div class="dpanel" id="dp-ai-${pid}">`;
-  html+=`<div class="sl">Live AI search</div>`;
-  html+=`<p style="font-size:11px;color:var(--text2);margin-bottom:8px">Requires an Anthropic API key in <code>config.js</code>.</p>`;
-  html+=`<button class="btn btn-p" id="ai-btn-${pid}" onclick="aiSearch(${pid})">Search GradCafe, Reddit & GMAT Club ↗</button>`;
-  html+=`<div id="ai-res-${pid}" style="margin-top:8px"></div>`;
-  html+=`</div>`; // end ai panel
-
+  
   html+=`</div>`; // end det
   return html;
 }
 
 // ── Tab switching (no event bubbling possible — tabs are inside .det, not .card-hdr) ──
 function switchTab(pid, tab){
-  const tabs=['avg','req','prof','ai'];
+  const tabs=['avg','req','prof'];
   tabs.forEach(t=>{
     const panel=document.getElementById(`dp-${t}-${pid}`);
     if(panel) panel.classList.toggle('active', t===tab);
@@ -489,56 +484,9 @@ function updateReq(pid){
 }
 
 // ── AI search ─────────────────────────────────────────────────────────────────
-// API key handled server-side — never exposed in browser
-const ANTHROPIC_KEY = 'server-side';
-
-async function aiSearch(pid){
-  const p=PROGRAMS.find(x=>x.id===pid);
-  const ck='ais_'+pid;
-  const btn=document.getElementById('ai-btn-'+pid);
-  const res=document.getElementById('ai-res-'+pid);
-  if(!btn||!res) return;
-
-  if(aiCache[ck]){res.innerHTML=`<div class="ai-box">${aiCache[ck]}</div><div class="ci">ℹ Session cache</div>`;return}
-  try{const s=localStorage.getItem(ck);if(s){const d=JSON.parse(s);aiCache[ck]=d.html;res.innerHTML=`<div class="ai-box">${d.html}</div><div class="ci">ℹ Cached (${d.date})</div>`;btn.textContent='Refresh ↗';return}}catch(e){}
 
 
 
-  btn.disabled=true;btn.textContent='Searching…';
-  res.innerHTML=`<div class="ai-box"><span class="spinner"></span>Searching GradCafe, Reddit, GMAT Club…</div>`;
-  try{
-    const resp=await fetch('/.netlify/functions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system:'Return HTML only. No markdown. Use <strong> for labels.',messages:[{role:'user',content:`Search for real community-sourced admitted student data for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club, Poets & Quants. HTML summary: GPA range (scale: ${p.sc}), test scores, work exp, nationality mix, key factors. Include source links.`}]})});
-    const rawText=await resp.text();
-    if(!rawText||rawText.trim()===''){throw new Error('Empty response from server (HTTP '+resp.status+'). Check Netlify Functions tab for errors.')}
-    let data;
-    try{data=JSON.parse(rawText)}catch(e){throw new Error('Bad response ('+rawText.length+' chars): '+rawText.slice(0,200))}
-    const html=data.content.map(i=>i.type==='text'?i.text:'').filter(Boolean).join('<br>');
-    aiCache[ck]=html;
-    try{localStorage.setItem(ck,JSON.stringify({html,date:new Date().toLocaleDateString()}))}catch(e){}
-    res.innerHTML=`<div class="ai-box">${html}</div>`;
-    btn.textContent='Refresh ↗';btn.disabled=false;
-  }catch(err){res.innerHTML=`<div class="rbox">Search failed: ${err.message}</div>`;btn.textContent='Retry ↗';btn.disabled=false}
-}
-
-async function aiProfs(pid){
-  const p=PROGRAMS.find(x=>x.id===pid);
-  const ck='aip_'+pid;
-  const el=document.getElementById('ai-prof-'+pid);
-  if(!el) return;
-  if(!ANTHROPIC_KEY){el.innerHTML=`<div class="rbox" style="color:var(--amber-text);background:var(--amber-bg)">No API key. Add it to <code>config.js</code>.</div>`;return}
-  try{const s=localStorage.getItem(ck);if(s){el.innerHTML=JSON.parse(s).html;return}}catch(e){}
-  el.innerHTML=`<div class="ai-box"><span class="spinner"></span>Fetching profiles…</div>`;
-  try{
-    const resp=await fetch('/.netlify/functions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system:'Return HTML only. 3-5 anonymised applicant profiles with source links.',messages:[{role:'user',content:`Find 3-5 individual admitted student profiles for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club. Show GPA (scale: ${p.sc}), test, work, undergrad, nationality, extras, result, source link. HTML cards.`}]})});
-    const rawText=await resp.text();
-    if(!rawText||rawText.trim()===''){throw new Error('Empty response from server (HTTP '+resp.status+'). Check Netlify Functions tab for errors.')}
-    let data;
-    try{data=JSON.parse(rawText)}catch(e){throw new Error('Bad response ('+rawText.length+' chars): '+rawText.slice(0,200))}
-    const html=data.content.map(i=>i.type==='text'?i.text:'').filter(Boolean).join('');
-    el.innerHTML=html;
-    try{localStorage.setItem(ck,JSON.stringify({html,date:new Date().toLocaleDateString()}))}catch(e){}
-  }catch(err){el.innerHTML=`<div class="rbox">Could not load profiles. Try again.</div>`}
-}
 
 // ── Candidate ────────────────────────────────────────────────────────────────
 function updConv(){
