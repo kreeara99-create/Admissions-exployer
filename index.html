@@ -392,7 +392,7 @@ function toggleCard(id){
 // ── Detail panel (built as HTML string, injected into card after header) ─────
 function buildDet(p){
   const a=p.ad;
-  const profs=SPROFS[p.id]||[];
+  const profs=(p.profiles&&p.profiles.length)?p.profiles:[];
   const pid=p.id;
 
   let html=`<div class="det">`;
