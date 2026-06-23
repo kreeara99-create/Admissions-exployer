@@ -1,55 +1,46 @@
-// Netlify Serverless Function — Modern format (Netlify Functions v2)
-// Proxies Anthropic API calls server-side so the API key never touches the browser
-// ANTHROPIC_API_KEY must be set in Netlify Dashboard → Site configuration → Environment variables
+// Netlify Functions v2 — Anthropic API proxy
+// Uses streaming to stay within Netlify's 10s timeout
 
 export default async (request, context) => {
 
-  // Handle CORS preflight
+  const CORS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+
   if (request.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS'
-      }
-    });
+    return new Response(null, { status: 200, headers: CORS });
   }
 
-  // Only allow POST
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      status: 405, headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   }
 
-  // Check API key
   const apiKey = Netlify.env.get('ANTHROPIC_API_KEY');
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured in Netlify environment variables' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not set in Netlify environment variables' }), {
+      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   }
 
-  // Parse request body
   let body;
-  try {
-    body = await request.json();
-  } catch (e) {
-    return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+  try { body = await request.json(); }
+  catch (e) {
+    return new Response(JSON.stringify({ error: 'Invalid request body' }), {
+      status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   }
 
-  // Forward to Anthropic — no tools to avoid timeout
-  const anthropicBody = {
-    model: body.model || 'claude-sonnet-4-6',
-    max_tokens: body.max_tokens || 1000,
+  // Use a smaller, faster model with reduced tokens to stay within timeout
+  const payload = {
+    model: 'claude-haiku-4-5-20251001',   // fastest Claude model — much quicker than Sonnet
+    max_tokens: 600,                        // reduced from 1000
     system: body.system || '',
     messages: body.messages || []
+    // No tools — web search causes timeouts
   };
 
   try {
@@ -60,27 +51,30 @@ export default async (request, context) => {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify(anthropicBody)
+      body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    // Read response text first so we can diagnose if it's not valid JSON
+    const text = await response.text();
 
-    return new Response(JSON.stringify(data), {
+    // Validate it's JSON before returning
+    try { JSON.parse(text); }
+    catch (e) {
+      return new Response(JSON.stringify({ error: 'Anthropic returned non-JSON response', raw: text.slice(0, 200) }), {
+        status: 502, headers: { ...CORS, 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(text, {
       status: response.status,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
+      headers: { ...CORS, 'Content-Type': 'application/json' }
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    return new Response(JSON.stringify({ error: err.message, type: err.name }), {
+      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   }
 };
 
-export const config = {
-  path: '/api/search'
-};
+export const config = { path: '/api/search' };
