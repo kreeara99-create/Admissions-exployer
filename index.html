@@ -489,8 +489,8 @@ function updateReq(pid){
 }
 
 // ── AI search ─────────────────────────────────────────────────────────────────
-// API key is handled server-side by Netlify function — never exposed in browser
-const ANTHROPIC_KEY='netlify-proxy';
+// API key handled server-side — never exposed in browser
+const ANTHROPIC_KEY = 'server-side';
 
 async function aiSearch(pid){
   const p=PROGRAMS.find(x=>x.id===pid);
