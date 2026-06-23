@@ -507,7 +507,7 @@ async function aiSearch(pid){
   btn.disabled=true;btn.textContent='Searching…';
   res.innerHTML=`<div class="ai-box"><span class="spinner"></span>Searching GradCafe, Reddit, GMAT Club…</div>`;
   try{
-    const resp=await fetch('/.netlify/functions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:'Return HTML only. No markdown. Use <strong> for labels.',messages:[{role:'user',content:`Search for real community-sourced admitted student data for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club, Poets & Quants. HTML summary: GPA range (scale: ${p.sc}), test scores, work exp, nationality mix, key factors. Include source links.`}],tools:[{type:'web_search_20250305',name:'web_search'}]})});
+    const resp=await fetch('/.netlify/functions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:'Return HTML only. No markdown. Use <strong> for labels.',messages:[{role:'user',content:`Search for real community-sourced admitted student data for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club, Poets & Quants. HTML summary: GPA range (scale: ${p.sc}), test scores, work exp, nationality mix, key factors. Include source links.`}]})});
     const data=await resp.json();
     const html=data.content.map(i=>i.type==='text'?i.text:'').filter(Boolean).join('<br>');
     aiCache[ck]=html;
@@ -526,7 +526,7 @@ async function aiProfs(pid){
   try{const s=localStorage.getItem(ck);if(s){el.innerHTML=JSON.parse(s).html;return}}catch(e){}
   el.innerHTML=`<div class="ai-box"><span class="spinner"></span>Fetching profiles…</div>`;
   try{
-    const resp=await fetch('/.netlify/functions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:'Return HTML only. 3-5 anonymised applicant profiles with source links.',messages:[{role:'user',content:`Find 3-5 individual admitted student profiles for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club. Show GPA (scale: ${p.sc}), test, work, undergrad, nationality, extras, result, source link. HTML cards.`}],tools:[{type:'web_search_20250305',name:'web_search'}]})});
+    const resp=await fetch('/.netlify/functions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,system:'Return HTML only. 3-5 anonymised applicant profiles with source links.',messages:[{role:'user',content:`Find 3-5 individual admitted student profiles for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club. Show GPA (scale: ${p.sc}), test, work, undergrad, nationality, extras, result, source link. HTML cards.`}]})});
     const data=await resp.json();
     const html=data.content.map(i=>i.type==='text'?i.text:'').filter(Boolean).join('');
     el.innerHTML=html;
