@@ -1,13 +1,22 @@
-// Netlify Functions v2 — Anthropic API proxy
-// Uses streaming to stay within Netlify's 10s timeout
-
 export default async (request, context) => {
 
   const CORS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+    'Access-Control-Allow-Methods': 'POST, OPTIONS, GET'
   };
+
+  // GET request — diagnostic ping so we can test the function is alive
+  if (request.method === 'GET') {
+    const apiKey = Netlify.env.get('ANTHROPIC_API_KEY');
+    return new Response(JSON.stringify({
+      status: 'function alive',
+      hasApiKey: !!apiKey,
+      keyPrefix: apiKey ? apiKey.slice(0,10)+'...' : 'NOT SET',
+      node: process.version,
+      time: new Date().toISOString()
+    }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
+  }
 
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: CORS });
@@ -21,7 +30,7 @@ export default async (request, context) => {
 
   const apiKey = Netlify.env.get('ANTHROPIC_API_KEY');
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not set in Netlify environment variables' }), {
+    return new Response(JSON.stringify({ error: 'ANTHROPIC_API_KEY not set' }), {
       status: 500, headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   }
@@ -29,22 +38,21 @@ export default async (request, context) => {
   let body;
   try { body = await request.json(); }
   catch (e) {
-    return new Response(JSON.stringify({ error: 'Invalid request body' }), {
+    return new Response(JSON.stringify({ error: 'Bad request body: ' + e.message }), {
       status: 400, headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   }
 
-  // Use a smaller, faster model with reduced tokens to stay within timeout
   const payload = {
-    model: 'claude-haiku-4-5-20251001',   // fastest Claude model — much quicker than Sonnet
-    max_tokens: 600,                        // reduced from 1000
-    system: body.system || '',
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 500,
+    system: body.system || 'Be concise.',
     messages: body.messages || []
-    // No tools — web search causes timeouts
   };
 
+  let anthropicResponse;
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -53,28 +61,35 @@ export default async (request, context) => {
       },
       body: JSON.stringify(payload)
     });
-
-    // Read response text first so we can diagnose if it's not valid JSON
-    const text = await response.text();
-
-    // Validate it's JSON before returning
-    try { JSON.parse(text); }
-    catch (e) {
-      return new Response(JSON.stringify({ error: 'Anthropic returned non-JSON response', raw: text.slice(0, 200) }), {
-        status: 502, headers: { ...CORS, 'Content-Type': 'application/json' }
-      });
-    }
-
-    return new Response(text, {
-      status: response.status,
-      headers: { ...CORS, 'Content-Type': 'application/json' }
-    });
-
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message, type: err.name }), {
-      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' }
+  } catch (fetchErr) {
+    return new Response(JSON.stringify({ error: 'Fetch to Anthropic failed: ' + fetchErr.message }), {
+      status: 502, headers: { ...CORS, 'Content-Type': 'application/json' }
     });
   }
+
+  // Read as text first so we never get empty-body parse errors
+  const rawText = await anthropicResponse.text();
+
+  if (!rawText || rawText.trim() === '') {
+    return new Response(JSON.stringify({
+      error: 'Anthropic returned empty response',
+      httpStatus: anthropicResponse.status
+    }), { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } });
+  }
+
+  // Validate JSON
+  try { JSON.parse(rawText); }
+  catch (e) {
+    return new Response(JSON.stringify({
+      error: 'Anthropic returned non-JSON',
+      preview: rawText.slice(0, 300)
+    }), { status: 502, headers: { ...CORS, 'Content-Type': 'application/json' } });
+  }
+
+  return new Response(rawText, {
+    status: anthropicResponse.status,
+    headers: { ...CORS, 'Content-Type': 'application/json' }
+  });
 };
 
 export const config = { path: '/api/search' };
