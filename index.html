@@ -507,7 +507,7 @@ async function aiSearch(pid){
   btn.disabled=true;btn.textContent='Searching…';
   res.innerHTML=`<div class="ai-box"><span class="spinner"></span>Searching GradCafe, Reddit, GMAT Club…</div>`;
   try{
-    const resp=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system:'Return HTML only. No markdown. Use <strong> for labels.',messages:[{role:'user',content:`Search for real community-sourced admitted student data for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club, Poets & Quants. HTML summary: GPA range (scale: ${p.sc}), test scores, work exp, nationality mix, key factors. Include source links.`}]})});
+    const resp=await fetch('/.netlify/functions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system:'Return HTML only. No markdown. Use <strong> for labels.',messages:[{role:'user',content:`Search for real community-sourced admitted student data for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club, Poets & Quants. HTML summary: GPA range (scale: ${p.sc}), test scores, work exp, nationality mix, key factors. Include source links.`}]})});
     const rawText=await resp.text();
     if(!rawText||rawText.trim()===''){throw new Error('Empty response from server (HTTP '+resp.status+'). Check Netlify Functions tab for errors.')}
     let data;
@@ -529,7 +529,7 @@ async function aiProfs(pid){
   try{const s=localStorage.getItem(ck);if(s){el.innerHTML=JSON.parse(s).html;return}}catch(e){}
   el.innerHTML=`<div class="ai-box"><span class="spinner"></span>Fetching profiles…</div>`;
   try{
-    const resp=await fetch('/api/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system:'Return HTML only. 3-5 anonymised applicant profiles with source links.',messages:[{role:'user',content:`Find 3-5 individual admitted student profiles for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club. Show GPA (scale: ${p.sc}), test, work, undergrad, nationality, extras, result, source link. HTML cards.`}]})});
+    const resp=await fetch('/.netlify/functions/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:600,system:'Return HTML only. 3-5 anonymised applicant profiles with source links.',messages:[{role:'user',content:`Find 3-5 individual admitted student profiles for "${p.n}" at "${p.u}" from GradCafe, Reddit, GMAT Club. Show GPA (scale: ${p.sc}), test, work, undergrad, nationality, extras, result, source link. HTML cards.`}]})});
     const rawText=await resp.text();
     if(!rawText||rawText.trim()===''){throw new Error('Empty response from server (HTTP '+resp.status+'). Check Netlify Functions tab for errors.')}
     let data;
