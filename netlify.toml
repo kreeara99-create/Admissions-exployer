@@ -2,7 +2,8 @@
   publish = "."
   functions = "netlify/functions"
 
-[[redirects]]
-  from = "/api/search"
-  to = "/.netlify/functions/search"
-  status = 200
+[functions]
+  node_bundler = "esbuild"
+
+[build.environment]
+  NODE_VERSION = "18"
