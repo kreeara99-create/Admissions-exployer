@@ -54622,13 +54622,103 @@ function togF(f,el){
 }
 
 // ── Filter ───────────────────────────────────────────────────────────────────
+
+// ── University / programme abbreviation lookup ───────────────────────────────
+const ABBREVS = {
+  'lse':        'london school of economics',
+  'ucl':        'university college london',
+  'imperial':   'imperial college london',
+  'oxbridge':   'oxford cambridge',
+  'ox':         'university of oxford',
+  'cam':        'university of cambridge',
+  'mit':        'massachusetts institute of technology',
+  'caltech':    'california institute of technology',
+  'cmu':        'carnegie mellon university',
+  'nyu':        'new york university',
+  'usc':        'university of southern california',
+  'ucla':       'university of california, los angeles',
+  'ucb':        'university of california, berkeley',
+  'uc berkeley':'university of california, berkeley',
+  'ucsf':       'university of california san francisco',
+  'ubc':        'university of british columbia',
+  'nus':        'national university of singapore',
+  'ntu':        'nanyang technological university',
+  'smu':        'singapore management university',
+  'hku':        'university of hong kong',
+  'hkust':      'hong kong university of science and technology',
+  'hkbu':       'hong kong baptist university',
+  'lbs':        'london business school',
+  'kcl':        'king\'s college london',
+  'kbs':        'king\'s college london',
+  'wbs':        'warwick business school',
+  'jbs':        'cambridge judge',
+  'said':       'oxford saïd',
+  'sbs':        'oxford saïd',
+  'lse alumni': 'london school of economics',
+  'anderson':   'ucla anderson',
+  'kellogg':    'northwestern',
+  'wharton':    'university of pennsylvania',
+  'booth':      'university of chicago',
+  'stern':      'new york university',
+  'sloan':      'massachusetts institute of technology',
+  'ross':       'university of michigan',
+  'fuqua':      'duke university',
+  'mccombs':    'university of texas',
+  'mays':       'texas a&m',
+  'tepper':     'carnegie mellon',
+  'darden':     'university of virginia',
+  'rotman':     'university of toronto',
+  'desautels':  'mcgill university',
+  'smith':      'queen\'s university',
+  'sipa':       'columbia university',
+  'hks':        'harvard kennedy',
+  'spia':       'princeton university',
+  'harris':     'university of chicago',
+  'ford school':'university of michigan',
+  'heinz':      'carnegie mellon',
+  'goldman':    'uc berkeley',
+  'mccourt':    'georgetown university',
+  'sanford':    'duke university',
+  'price':      'university of southern california',
+  'wagner':     'new york university',
+  'bsg':        'university of oxford',
+  'mfe':        'financial engineering',
+  'mfin':       'master of finance',
+  'mba':        'business administration',
+  'llm':        'master of laws',
+  'llb':        'bachelor of laws',
+  'ppe':        'philosophy politics economics',
+  'cs':         'computer science',
+  'ai':         'artificial intelligence',
+  'ml':         'machine learning',
+  'ds':         'data science',
+  'ba':         'business analytics',
+  'ir':         'international relations',
+  'econ':       'economics',
+  'fin':        'finance',
+  'acct':       'accounting',
+  'mgmt':       'management',
+  'pp':         'public policy',
+  'mpp':        'master of public policy',
+  'mpa':        'master of public administration',
+};
+
+function expandQuery(q) {
+  if (!q) return q;
+  const lower = q.trim().toLowerCase();
+  // Check if full query is an abbreviation
+  if (ABBREVS[lower]) return ABBREVS[lower];
+  // Also try expanding each word token
+  return lower.split(/\s+/).map(w => ABBREVS[w] || w).join(' ');
+}
+
 function filtered(){
   const q=(document.getElementById('q').value||'').toLowerCase();
   const ft=document.getElementById('ft').value;
   const fc=document.getElementById('fc').value;
   const fs=document.getElementById('fs').value;
   return PROGRAMS.filter(p=>
-    (!q||p.n.toLowerCase().includes(q)||p.u.toLowerCase().includes(q))&&
+    (!q||(()=>{const eq=expandQuery(q);return p.n.toLowerCase().includes(eq)||p.u.toLowerCase().includes(eq)||p.n.toLowerCase().includes(q)||p.u.toLowerCase().includes(q)||(p.sc&&p.sc.toLowerCase().includes(eq));})())&&
     (!ft||p.t===ft)&&(!fc||p.c===fc)&&
     (!af.length||af.includes(p.f)||(p.tags&&p.tags.some(t=>af.includes(t))))
   ).sort((a,b)=>fs==='n'?a.n.localeCompare(b.n):a.rk-b.rk);
